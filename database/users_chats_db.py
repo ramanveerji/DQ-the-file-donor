@@ -44,9 +44,7 @@ class Database:
             'time': "23:59:59"
         }
         user = await self.col.find_one({'id': int(id)})
-        if user:
-            return user.get("verification_status", default)
-        return default
+        return user.get("verification_status", default) if user else default
     
     async def add_user(self, id, name):
         user = self.new_user(id, name)
@@ -57,8 +55,7 @@ class Database:
         return bool(user)
     
     async def total_users_count(self):
-        count = await self.col.count_documents({})
-        return count
+        return await self.col.count_documents({})
     
     async def remove_ban(self, id):
         ban_status = dict(
@@ -80,9 +77,7 @@ class Database:
             ban_reason=''
         )
         user = await self.col.find_one({'id':int(id)})
-        if not user:
-            return default
-        return user.get('ban_status', default)
+        return default if not user else user.get('ban_status', default)
 
     async def get_all_users(self):
         return self.col.find({})
@@ -139,9 +134,7 @@ class Database:
             'is_shortlink': IS_SHORTLINK
         }
         chat = await self.grp.find_one({'id':int(id)})
-        if chat:
-            return chat.get('settings', default)
-        return default
+        return chat.get('settings', default) if chat else default
     
 
     async def disable_chat(self, chat, reason="No Reason"):
@@ -153,8 +146,7 @@ class Database:
     
 
     async def total_chat_count(self):
-        count = await self.grp.count_documents({})
-        return count
+        return await self.grp.count_documents({})
     
 
     async def get_all_chats(self):

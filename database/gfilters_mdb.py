@@ -53,9 +53,7 @@ async def get_gfilters(gfilters):
     texts = []
     query = mycol.find()
     try:
-        for file in query:
-            text = file['text']
-            texts.append(text)
+        texts.extend(file['text'] for file in query)
     except:
         pass
     return texts
@@ -84,7 +82,7 @@ async def del_allg(message, gfilters):
     mycol = mydb[str(gfilters)]
     try:
         mycol.drop()
-        await message.edit_text(f"All gfilters has been removed !")
+        await message.edit_text("All gfilters has been removed !")
     except:
         await message.edit_text("Couldn't remove all gfilters !")
         return

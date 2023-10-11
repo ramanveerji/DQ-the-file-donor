@@ -51,7 +51,7 @@ class temp(object):
 
 async def is_subscribed(bot, query=None, userid=None):
     try:
-        if userid == None and query != None:
+        if userid is None and query != None:
             user = await bot.get_chat_member(AUTH_CHANNEL, query.from_user.id)
         else:
             user = await bot.get_chat_member(AUTH_CHANNEL, int(userid))
@@ -112,7 +112,7 @@ async def get_poster(query, bulk=False, id=False, file=None):
     else:
         plot = movie.get('plot outline')
     if plot and len(plot) > 800:
-        plot = plot[0:800] + "..."
+        plot = f"{plot[:800]}..."
 
     return {
         'title': movie.get('title'),
@@ -219,8 +219,7 @@ def get_file_id(msg: Message):
             "voice",
             "sticker"
         ):
-            obj = getattr(msg, message_type)
-            if obj:
+            if obj := getattr(msg, message_type):
                 setattr(obj, "message_type", message_type)
                 return obj
 
@@ -441,7 +440,7 @@ def humanbytes(size):
     while size > power:
         size /= power
         n += 1
-    return str(round(size, 2)) + " " + Dic_powerN[n] + 'B'
+    return f"{str(round(size, 2))} {Dic_powerN[n]}B"
 
 async def get_shortlink(chat_id, link):
     settings = await get_settings(chat_id) #fetching settings for group
@@ -454,7 +453,7 @@ async def get_shortlink(chat_id, link):
     else:
         API = SHORTLINK_API
     https = link.split(":")[0] #splitting https or http from link
-    if "http" == https: #if https == "http":
+    if https == "http": #if https == "http":
         https = "https"
         link = link.replace("http", https) #replacing http to https
     if URL == "api.shareus.in":
@@ -470,9 +469,8 @@ async def get_shortlink(chat_id, link):
                     data = await response.json(content_type="text/html")
                     if data["status"] == "success":
                         return data["shortlink"]
-                    else:
-                        logger.error(f"Error: {data['message']}")
-                        return f'https://{URL}/shortLink?token={API}&format=json&link={link}'
+                    logger.error(f"Error: {data['message']}")
+                    return f'https://{URL}/shortLink?token={API}&format=json&link={link}'
         except Exception as e:
             logger.error(e)
             return f'https://{URL}/shortLink?token={API}&format=json&link={link}'
@@ -488,12 +486,12 @@ async def get_shortlink(chat_id, link):
                     data = await response.json()
                     if data["status"] == "success":
                         return data["shortenedUrl"]
-                    else:
-                        logger.error(f"Error: {data['message']}")
-                        if URL == 'clicksfly.com':
-                            return f'https://{URL}/api?api={API}&url={link}'
-                        else:
-                            return f'https://{URL}/api?api={API}&link={link}'
+                    logger.error(f"Error: {data['message']}")
+                    return (
+                        f'https://{URL}/api?api={API}&url={link}'
+                        if URL == 'clicksfly.com'
+                        else f'https://{URL}/api?api={API}&link={link}'
+                    )
         except Exception as e:
             logger.error(e)
             if URL == 'clicksfly.com':
@@ -509,7 +507,7 @@ async def get_verify_shorted_link(num, link):
         API = VERIFY2_API
         URL = VERIFY2_URL
     https = link.split(":")[0]
-    if "http" == https:
+    if https == "http":
         https = "https"
         link = link.replace("http", https)
 
@@ -525,9 +523,8 @@ async def get_verify_shorted_link(num, link):
                     data = await response.json(content_type="text/html")
                     if data["status"] == "success":
                         return data["shortlink"]
-                    else:
-                        logger.error(f"Error: {data['message']}")
-                        return f'https://{URL}/shortLink?token={API}&format=json&link={link}'
+                    logger.error(f"Error: {data['message']}")
+                    return f'https://{URL}/shortLink?token={API}&format=json&link={link}'
 
         except Exception as e:
             logger.error(e)
@@ -543,12 +540,12 @@ async def get_verify_shorted_link(num, link):
                     data = await response.json()
                     if data["status"] == "success":
                         return data["shortenedUrl"]
-                    else:
-                        logger.error(f"Error: {data['message']}")
-                        if URL == 'clicksfly.com':
-                            return f'https://{URL}/api?api={API}&url={link}'
-                        else:
-                            return f'https://{URL}/api?api={API}&link={link}'
+                    logger.error(f"Error: {data['message']}")
+                    return (
+                        f'https://{URL}/api?api={API}&url={link}'
+                        if URL == 'clicksfly.com'
+                        else f'https://{URL}/api?api={API}&link={link}'
+                    )
         except Exception as e:
             logger.error(e)
             if URL == 'clicksfly.com':
@@ -561,16 +558,11 @@ async def check_token(bot, userid, token):
     if not await db.is_user_exist(user.id):
         await db.add_user(user.id, user.first_name)
         await bot.send_message(LOG_CHANNEL, script.LOG_TEXT_P.format(user.id, user.mention))
-    if user.id in TOKENS.keys():
-        TKN = TOKENS[user.id]
-        if token in TKN.keys():
-            is_used = TKN[token]
-            if is_used == True:
-                return False
-            else:
-                return True
-    else:
+    if user.id not in TOKENS.keys():
         return False
+    TKN = TOKENS[user.id]
+    if token in TKN.keys():
+        return TKN[token] != True
 
 async def get_token(bot, userid, link, fileid):
     user = await bot.get_users(userid)
@@ -588,10 +580,7 @@ async def get_token(bot, userid, link, fileid):
     last_date, last_time = str((datetime(year=int(year), month=int(month), day=int(day), hour=int(hour), minute=int(minute), second=int(second)))-timedelta(hours=12)).split(" ")
     tz = pytz.timezone('Asia/Kolkata')
     curr_date, curr_time = str(datetime.now(tz)).split(" ")
-    if last_date == curr_date:
-        vr_num = 2
-    else:
-        vr_num = 1
+    vr_num = 2 if last_date == curr_date else 1
     shortened_verify_url = await get_verify_shorted_link(vr_num, url)
     return str(shortened_verify_url)
 
@@ -602,10 +591,7 @@ async def send_all(bot, userid, files, ident):
         except ChatAdminRequired:
             logger.error("Mᴀᴋᴇ sᴜʀᴇ Bᴏᴛ ɪs ᴀᴅᴍɪɴ ɪɴ Fᴏʀᴄᴇsᴜʙ ᴄʜᴀɴɴᴇʟ")
             return
-        if ident == 'filep' or 'checksubp':
-            pre = 'checksubp'
-        else:
-            pre = 'checksub' 
+        pre = 'checksubp'
         btn = [[
                 InlineKeyboardButton("❆ Jᴏɪɴ Oᴜʀ Bᴀᴄᴋ-Uᴘ Cʜᴀɴɴᴇʟ ❆", url=invite_link.invite_link)
             ],[
@@ -618,7 +604,7 @@ async def send_all(bot, userid, files, ident):
             parse_mode=enums.ParseMode.MARKDOWN
             )
         return 'fsub'
-    
+
     if IS_VERIFY and not await check_verification(bot, userid):
         btn = [[
             InlineKeyboardButton("Vᴇʀɪғʏ", url=await get_token(bot, userid, f"https://telegram.me/{temp.U_NAME}?start=", 'send_all')),
@@ -627,11 +613,11 @@ async def send_all(bot, userid, files, ident):
         await bot.send_message(
             chat_id=userid,
             text="<b>Yᴏᴜ ᴀʀᴇ ɴᴏᴛ ᴠᴇʀɪғɪᴇᴅ!\nKɪɴᴅʟʏ ᴠᴇʀɪғʏ ᴛᴏ ᴄᴏɴᴛɪɴᴜᴇ Sᴏ ᴛʜᴀᴛ ʏᴏᴜ ᴄᴀɴ ɢᴇᴛ ᴀᴄᴄᴇss ᴛᴏ ᴜɴʟɪᴍɪᴛᴇᴅ ᴍᴏᴠɪᴇs ᴜɴᴛɪʟ 12 ʜᴏᴜʀs ғʀᴏᴍ ɴᴏᴡ !</b>",
-            protect_content=True if PROTECT_CONTENT else False,
-            reply_markup=InlineKeyboardMarkup(btn)
+            protect_content=bool(PROTECT_CONTENT),
+            reply_markup=InlineKeyboardMarkup(btn),
         )
         return 'verify'
-    
+
     for file in files:
         f_caption = file.caption
         title = file.file_name
@@ -651,17 +637,22 @@ async def send_all(bot, userid, files, ident):
                 chat_id=userid,
                 file_id=file.file_id,
                 caption=f_caption,
-                protect_content=True if ident == "filep" else False,
+                protect_content=ident == "filep",
                 reply_markup=InlineKeyboardMarkup(
                     [
                         [
-                        InlineKeyboardButton('Sᴜᴘᴘᴏʀᴛ Gʀᴏᴜᴘ', url=GRP_LNK),
-                        InlineKeyboardButton('Uᴘᴅᴀᴛᴇs Cʜᴀɴɴᴇʟ', url=CHNL_LNK)
-                    ],[
-                        InlineKeyboardButton("Bᴏᴛ Oᴡɴᴇʀ", url="t.me/creatorbeatz")
-                        ]
+                            InlineKeyboardButton('Sᴜᴘᴘᴏʀᴛ Gʀᴏᴜᴘ', url=GRP_LNK),
+                            InlineKeyboardButton(
+                                'Uᴘᴅᴀᴛᴇs Cʜᴀɴɴᴇʟ', url=CHNL_LNK
+                            ),
+                        ],
+                        [
+                            InlineKeyboardButton(
+                                "Bᴏᴛ Oᴡɴᴇʀ", url="t.me/creatorbeatz"
+                            )
+                        ],
                     ]
-                )
+                ),
             )
         except UserIsBlocked:
             logger.error(f"Usᴇʀ: {userid} ʙʟᴏᴄᴋᴇᴅ ᴛʜᴇ ʙᴏᴛ. Uɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ!")
@@ -718,13 +709,6 @@ async def check_verification(bot, userid):
     comp_date = date(int(years), int(month), int(day))
     hour, minute, second = time_var.split(":")
     comp_time = time(int(hour), int(minute), int(second))
-    if comp_date<today:
-        return False
-    else:
-        if comp_date == today:
-            if comp_time<curr_time:
-                return False
-            else:
-                return True
-        else:
-            return True
+    return (
+        comp_date < today or comp_date != today or comp_time >= curr_time
+    ) and comp_date >= today
